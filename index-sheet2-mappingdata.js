@@ -48,6 +48,7 @@ for(let i =0;i<group.length;i++){
         tt.push(index)
     }
 }
+
 tt = _slice(tt,5,tt.length)
 let mapData = {}
 let i =0
@@ -55,10 +56,10 @@ tt.forEach(item=>{
     mapData[codes[i++]] = item
 })
 
-db.set('mapData',mapData).write()
+db.set('tt',tt).write()
 
 
-
+/*
 let test = {}
 
 for (let s of calculateSort) {
@@ -73,4 +74,4 @@ for (let s of calculateSort) {
 }
 
 console.log(test)
-return
+return*/
