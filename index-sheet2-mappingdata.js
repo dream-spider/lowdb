@@ -48,13 +48,29 @@ for(let i =0;i<group.length;i++){
         tt.push(index)
     }
 }
-tt = _slice(tt,8,tt.length)
-let mapData = []
+tt = _slice(tt,5,tt.length)
+let mapData = {}
 let i =0
 tt.forEach(item=>{
-    mapData.push({
-        [codes[i++]]:item
-    })
+    mapData[codes[i++]] = item
 })
 
 db.set('mapData',mapData).write()
+
+
+
+let test = {}
+
+for (let s of calculateSort) {
+    if (!test[sheetSevenColumnConfig[s]]) {
+        test[sheetSevenColumnConfig[s]] = []
+    }
+    for (let columnKey in sheetSevenColumnConfig) {
+        if (columnKey.length === 5 && columnKey.startsWith(s)) {
+            test[sheetSevenColumnConfig[s]].push(sheetSevenColumnConfig[columnKey])
+        }
+    }
+}
+
+console.log(test)
+return

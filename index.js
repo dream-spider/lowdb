@@ -11,38 +11,16 @@ const adapter = new FileSync('db.json')
 const db = low(adapter)
 
 
-
 // Set some defaults (required if your JSON file is empty)
 db.defaults({dictionaryData: {}, calculateData: {}}).write()
 
-/*功能：
-1、此表为中间表，无需展现，只需将数据保留，参与后续导出表计算；
-规则：
-1、科目编码、名称读取J06表中L列>0的科目；
-2、标橙色的为固定取数：通过科目匹配将J06表中L列填入J07表中E列，从J07表F列开始所有合计值取J05中G列（用J07横向科目与J05中纵向科目匹配）；
-3、计算
-3.1、J07表横向大类增加匹配顺序：301、303、302、307、309、310、311、313、399；
-3.2、计算原则：在做完特殊规则匹配之后，根据J02中指定的科目排序（剔除已匹配的代码）和J07中大类的排序，按照先纵后横，先用纵向合计与横向合计对比，取较小值；再用剩余纵向合计与横向合计对比，继续取较小值，依次计算，直至纵向合计数据用完；再用此规则计算剩余列；
-特殊规则：
-1)若科目代码出现2210201，优先填入“代码2210201”所在的Q列；（将行列合计中较小值直接填入，下同）2210201 Q
-2)若科目代码出现2101101，优先填入“代码2101101”所在的N列；
-3)若科目代码出现2101102，优先填入“代码2101102”所在的N列（可以先匹配2101101，再匹配2101102）；
-3)若科目代码出现2101103，优先填入“代码2101103”所在的O列；
-4)若科目代码出现2210202，优先填入“代码2210202”所在的H列；
-5)若科目代码出现2080501,2080502,2080504，则科目代码所在的U列~AU列都为0；
-6)若科目代码以203开头（除2030603）,则科目代码所在的G列~R列、以及AW列、AX列都为0；
-7)若科目代码出现2080505，优先填入对应的L列，再到P列，再到S列;
-8)若科目代码出现2080506，优先M列，依次P列，S列
-9)若科目代码以21012开头，优先N列，依次P列，S列
-4、所有列计算完成后，需保证：
-G9=G10+G11+G12+…
-E10=G10+H10+I10+…
-横向数值相加等于E列合计，纵向相加等于G、H…列合计*/
-const startRowIndex = 7
+
+
+const startRowIndex = getMetaData('SheetSeven', 'startRowIndex')
 
 let eColumnCount = 0
 let initData = db.get('calculateData.SheetSix').filter(rowData => {
-    return _get(rowData, 'extends.row') >= getMetaData('SheetSix', 'startRowIndex') && _toNumber(rowData.L || 0) >0
+    return _get(rowData, 'extends.row') >= getMetaData('SheetSix', 'startRowIndex') && _toNumber(rowData.L || 0) > 0
 }).map(rowData => {
     eColumnCount += _toNumber(rowData.L || 0)
     return {
@@ -60,44 +38,207 @@ db.get('calculateData.SheetFive').filter(rowData => {
     j05GMap[rowData.A] = rowData.G
 })
 
-const sheetFiveColumnConfig = getMetaData('SheetFive', 'mappingData')
+const sheetSevenColumnConfig = getMetaData('SheetSeven', 'mappingData')
 
 let countRow = {
-    extends:{
+    extends: {
         row: 6
     },
     E: eColumnCount
 }
-for(let columnKey in sheetFiveColumnConfig){
-    countRow[sheetFiveColumnConfig[columnKey]] = j05GMap[columnKey]
+
+for (let columnKey in sheetSevenColumnConfig) {
+    countRow[sheetSevenColumnConfig[columnKey]] = j05GMap[columnKey]
 }
 
 initData = [countRow, ...initData]
+const calculateSort = ['301', '303', '302', '307', '309', '310', '311', '313', '399', '312']
 
-console.log(initData)
+const calculateRules = [
+    {
+        code: '2080501',
+        formula: 'equals',
+        value: 0,
+        column: ['U', 'AU']
+    },
+    {
+        code: '2080502',
+        formula: 'equals',
+        value: 0,
+        column: ['U', 'AU']
+    },
+    {
+        code: '2080504',
+        formula: 'equals',
+        value: 0,
+        column: ['U', 'AU']
+    },
+    {
+        code: '2210201',
+        formula: 'calc',
+        column: 'Q'
+    },
+    {
+        code: '2101101',
+        formula: 'calc',
+        column: 'N'
+    }
+    ,
+    {
+        code: '2101102',
+        formula: 'calc',
+        column: 'N'
+    },
+    {
+        code: '2101103',
+        formula: 'calc',
+        column: 'O'
+    },
+    {
+        code: '2210202',
+        formula: 'calc',
+        column: 'H'
+    },
+    {
+        code: '2080505',
+        formula: 'calc',
+        column: 'L'
+    },
+    {
+        code: '2080505',
+        formula: 'calc',
+        column: 'P'
+    }
+    ,
+    {
+        code: '2080505',
+        formula: 'calc',
+        column: 'S'
+    }
+    ,
+    {
+        code: '2080506',
+        formula: 'calc',
+        column: 'M'
+    },
+    {
+        code: '2080506',
+        formula: 'calc',
+        column: 'P'
+    },
+    {
+        code: '2080506',
+        formula: 'calc',
+        column: 'S'
+    },
+    {
+        code: '21012',
+        formula: 'startWithCalc',
+        column: ['N', 'P', 'S']
+    },
+    {
+        code: '203',
+        formula: 'startWith',
+        except: '2030603',
+        code: '21012',
+        column: ['G', 'R', 'AW', 'AX'],
+        value: '0'
+    }
+]
+// 设定固定编码固定列的值
+calculateRules.filter(rowData => rowData.formula === 'equals').forEach(rule => {
+    initData.forEach(targetData => {
+        if (targetData.A && targetData.A === rule.code) {
+            for (let column of rule.column) {
+                targetData[column] = rule.value
+            }
+        }
+    })
+})
 
-/*
-2080501 AU 0
-2080502 AU 0
-2080504 AU 0
-203>2030603 G R AW AX 0
-2210201 Q
-2101101 N
-2101102 N
-2101103 O
-2210202 H
-2080505 L
-2080505 P
-2080505 S
-2080506 M
-2080506 P
-2080506 S
 
-startwith 21012 N
-startwith 21012 P
-startwith 21012 S
+// 设置固定编码开头的列为固定值
+calculateRules.filter(rowData => rowData.formula === 'startWith').forEach(rule => {
+    initData.filter(targetData => targetData.A && targetData.A.startsWith(rule.code)).forEach(targetData => {
+        if (targetData.A !== rule.except) {
+            for (let column of rule.column) {
+                targetData[column] = rule.value
+            }
+        }
+    })
+})
 
-301、303、302、307、309、310、311、313、399*/
+
+calculateRules.filter(rowData => rowData.formula === 'calc').forEach(rule => {
+    let calcData = initData.filter(targetData => targetData.A && targetData.A === rule.code)
+    calculate(calcData, rule.column)
+})
+
+calculateRules.filter(rowData => rowData.formula === 'startWithCalc').forEach(rule => {
+    initData.filter(targetData => targetData.A && targetData.A.startsWith(rule.code)).forEach(targetData => {
+        for (let column of rule.column) {
+            calculate(targetData, column)
+        }
+    })
+})
+
+let calcColumnSort = []
+
+for (let bigCode of calculateSort) {
+    for (let col in sheetSevenColumnConfig) {
+        if (col.length === 5 && col.startsWith(bigCode)) {
+            calcColumnSort.push(col)
+        }
+    }
+}
+
+let initDataSize = initData.length
+if (initDataSize == 1) {
+    return
+}
+// 按照大类排序，先纵后横计算
+calcColumnSort.forEach(column => {
+    for (let index = 1; index < initData; index++) {
+        calculate(initData[index][column])
+    }
+})
+
+// countSheet('SheetSeven')
+
+
+function calculate(targetData, column) {
+    if (targetData.length === 0 || targetData[column]) {
+        console.log('nothing to calc')
+        return
+    }
+    let startColumnValue = initData.filter(rowData => _get(rowData, 'extends.row') === startRowIndex - 1)
+    if (startColumnValue.length === 1) {
+        startColumnValue = _toNumber(startColumnValue[0][column] || 0)
+    }
+    let startRowValue = _toNumber(targetData.E || 0)
+    // 计算当前行合计
+    let rowSum = 0
+    for (let col in sheetSevenColumnConfig) {
+        if (sheetSevenColumnConfig[col].length === 5) {
+            rowSum += _toNumber(targetData[col] || 0)
+        }
+
+    }
+    // 计算当前列合计
+    let colSum = 0
+    initData.filter(rowData => _get(rowData, 'extends.row') >= startRowIndex).forEach(rowData => {
+        column += _toNumber(rowData[column] || 0)
+    })
+    let xRs = startRowValue - rowSum
+    let yrs = startColumnValue - colSum
+    // 此处加上保留两位有效数字
+    targetData[column] = xRs > yrs ? yrs : xRs
+}
+
+
+
+
+
 
 
 
