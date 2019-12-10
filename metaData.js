@@ -947,6 +947,96 @@ const metaData = {
     },
     SheetSeven: {
         startRowIndex: 7,
+        calculateRules: [
+            {
+                code: '2080501',
+                formula: 'equals',
+                value: 0,
+                column: ['U', 'AU']
+            },
+{
+    code: '2080502',
+        formula: 'equals',
+    value: 0,
+    column: ['U', 'AU']
+},
+{
+    code: '2080504',
+        formula: 'equals',
+    value: 0,
+    column: ['U', 'AU']
+},
+{
+    code: '2210201',
+        formula: 'calc',
+    column: 'Q'
+},
+{
+    code: '2101101',
+        formula: 'calc',
+    column: 'N'
+}
+,
+{
+    code: '2101102',
+        formula: 'calc',
+    column: 'N'
+},
+{
+    code: '2101103',
+        formula: 'calc',
+    column: 'O'
+},
+{
+    code: '2210202',
+        formula: 'calc',
+    column: 'H'
+},
+{
+    code: '2080505',
+        formula: 'calc',
+    column: 'L'
+},
+{
+    code: '2080505',
+        formula: 'calc',
+    column: 'P'
+}
+,
+{
+    code: '2080505',
+        formula: 'calc',
+    column: 'S'
+}
+,
+{
+    code: '2080506',
+        formula: 'calc',
+    column: 'M'
+},
+{
+    code: '2080506',
+        formula: 'calc',
+    column: 'P'
+},
+{
+    code: '2080506',
+        formula: 'calc',
+    column: 'S'
+},
+{
+    code: '21012',
+        formula: 'startWithCalc',
+    column: ['N', 'P', 'S']
+},
+{
+    code: '203',
+        formula: 'startWith',
+    except: '2030603',
+    column: ['G', 'R', 'AW', 'AX'],
+    value: '0'
+}
+],
         countConfig: {
             F: [
                 'G', 'H', 'I', 'J',
